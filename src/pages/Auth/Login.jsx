@@ -89,119 +89,142 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-300 via-blue-500 to-blue-700 p-4">
-      {/* Sign Up Button */}
-      <div className="absolute top-8 right-8 hidden sm:block">
-        <Link
-          to="/signup"
-          className="bg-white text-gray-700 rounded-full px-6 py-2 text-lg font-medium flex items-center space-x-2 hover:bg-blue-50 transition duration-300 shadow-md"
-        >
-          <User className="text-blue-600" />
-          <span>Sign Up</span>
-        </Link>
-      </div>
-
-      {/* Login Card */}
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-8 max-w-md w-full mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Login
-        </h1>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Field */}
-          <div>
-            <label className="block text-gray-700 mb-2 font-medium">
-              Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="email@example.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-xl flex max-w-3xl w-full">
+        {/* Left side - Black Panel */}
+        <div className="w-1/2 bg-black text-white p-8 flex flex-col items-center justify-center text-center">
+          <div className="mb-6">
+            <svg
+              viewBox="0 0 100 100"
+              className="w-24 h-24 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 20 Q 35 10, 50 20 Q 65 30, 80 20 L 80 80 Q 65 70, 50 80 Q 35 90, 20 80 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
               />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div className="relative">
-            <label className="block text-gray-700 mb-2 font-medium">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
+              <path
+                d="M20 30 Q 35 20, 50 30 Q 65 40, 80 30"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
               />
+              <path
+                d="M20 40 Q 35 30, 50 40 Q 65 50, 80 40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-4">ZenSoc</h2>
+          <p className="text-sm">
+            Not Your Average Web - Simplify, Organize, Achieve!
+          </p>
+        </div>
+
+        {/* Right side - Login Form */}
+        <div className="w-1/2 p-8 flex items-center">
+          <div className="w-full">
+            <h1 className="text-2xl font-bold mb-2">Login</h1>
+            <p className="text-gray-600 mb-8">
+              Welcome back! Glad to see you, Again!
+            </p>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="rememberMe"
+                    className="ml-2 text-sm text-gray-600"
+                  >
+                    Remember me
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-blue-500 hover:underline text-sm"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full p-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </button>
+
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={handleGoogleSignIn}
+                className="w-full p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                <GoogleIcon className="mr-2" />
+                Login with Google
               </button>
-            </div>
+            </form>
+
+            <p className="text-center mt-6 text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                to="/signup"
+                className="text-blue-500 hover:underline font-medium"
+              >
+                Register Now
+              </Link>
+            </p>
           </div>
-
-          {/* Remember Me Switch */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
-            >
-              <Key size={16} className="mr-1" />
-              Forgot password?
-            </button>
-          </div>
-
-          {/* Login Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition duration-200 flex items-center justify-center ${
-              isLoading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          >
-            <span>{isLoading ? "Logging in..." : "Login"}</span>
-            {!isLoading && <ArrowRight size={20} className="ml-2" />}
-          </button>
-
-          {/* Sign in with Google */}
-          <button
-            className="w-full max-w-xs sm:max-w-sm md:max-w-md bg-indigo-400 text-gray-300 rounded-full py-3 px-6 flex items-center justify-center text-lg sm:text-xl font-medium hover:bg-opacity-100 hover:bg-blue-50 hover:text-blue-400 transition duration-300 shadow-lg"
-            onClick={handleGoogleSignIn} // Use the updated handler
-          >
-            <GoogleIcon className="mr-3" />
-            Login with Google
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
