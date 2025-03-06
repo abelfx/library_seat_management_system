@@ -1,5 +1,5 @@
 import { Check, Clock, User, Building2, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { db } from "../../firebase/firebase"; // Make sure path is correct
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -103,11 +103,21 @@ function FloorDetailsModal({ floor, onClose }) {
   );
 }
 
-function FloorCard({ floor, available, reserved, occupied, onClick }) {
+function FloorCard({
+  floor,
+  available,
+  reserved,
+  occupied,
+  onClick,
+  onSelect,
+}) {
   return (
     <div
       className="bg-black text-white border border-gray-800 rounded-lg p-4 cursor-pointer hover:border-yellow-500 transition-colors"
-      onClick={onClick}
+      onClick={() => {
+        onClick(); // For modal
+        onSelect(floor); // For navigation
+      }}
     >
       <div className="flex items-center gap-2 mb-4">
         <Building2 className="text-white" />
@@ -150,6 +160,7 @@ export default function SeatAvailability() {
   const [reservations, setReservations] = useState([]);
   const [floorStats, setFloorStats] = useState({});
   const [selectedFloor, setSelectedFloor] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,6 +242,10 @@ export default function SeatAvailability() {
 
     fetchData();
   }, []);
+
+  const handleFloorSelect = (floor) => {
+    navigate(`/available-seats/${floor.id}`);
+  };
 
   if (loading) {
     return (
@@ -329,6 +344,7 @@ export default function SeatAvailability() {
                 reserved={floorStats[floor.id]?.reserved || 0}
                 occupied={floorStats[floor.id]?.occupied || 0}
                 onClick={() => setSelectedFloor(floor)}
+                onSelect={handleFloorSelect}
               />
             ))}
           </div>
@@ -343,6 +359,7 @@ export default function SeatAvailability() {
                 reserved={floorStats[floor.id]?.reserved || 0}
                 occupied={floorStats[floor.id]?.occupied || 0}
                 onClick={() => setSelectedFloor(floor)}
+                onSelect={handleFloorSelect}
               />
             ))}
           </div>
