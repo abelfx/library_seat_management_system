@@ -1,0 +1,99 @@
+.seat-container {
+    min-height: 100vh;
+    background: #f3f4f6;
+    padding: 2rem;
+  }
+  
+  .seat-header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .seat-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .seat-status {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .seat-grid {
+    padding: 1rem;
+  }
+  
+  .seat-zone {
+    margin-bottom: 1rem;
+  }
+  
+  .zone-label {
+    background: #333;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 5px;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .seats {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .seat-button {
+    padding: 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .available {
+    background: green;
+    color: white;
+  }
+  
+  .booked {
+    background: red;
+    color: white;
+    cursor: not-allowed;
+  }
+  
+  .occupied {
+    background: yellow;
+    color: black;
+    cursor: not-allowed;
+  }
+  
+  .selected {
+    background: blue;
+    color: white;
+  }
+  
+  .seat-dialog {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .dialog-box {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+  }
+  

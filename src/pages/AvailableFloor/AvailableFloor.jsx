@@ -116,7 +116,7 @@ export default function SeatAvailability() {
        </div>
       </main>
 
-      <footer className="p-4 text-xs text-gray-500">Desktop - 5</footer>
+  
     </div>
   );
 }
