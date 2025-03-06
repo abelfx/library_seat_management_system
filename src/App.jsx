@@ -15,7 +15,10 @@ import Home from "./pages/home/home";
 import LandingPage from "./pages/LandingPage";
 import AvailableFloor from "./pages/AvailableFloor/AvailableFloor";
 import AvailableSeat from "./pages/AvailableSeat/AvailableSeat";
-
+import AdminLogin from "./pages/Auth/AdminLogin";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import SeatSelectionPage from "./pages/Admin/SeatSelectionPage";
+import Unauthorized from "./pages/Auth/Unauthorized";
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
   return auth.currentUser ? children : <Navigate to="/login" />;
@@ -43,6 +46,18 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+
+        {/* Protected routes for authenticated users */}
+        {/* <Route element={<ProtectedRoute />}> */}
+        <Route path="/seat-selection" element={<SeatSelectionPage />} />
+        {/* </Route> */}
+
+        {/* Protected routes for admin users */}
+        {/* <Route element={<AdminRoute />}> */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        {/* </Route> */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
