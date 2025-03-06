@@ -58,9 +58,34 @@ export default function AdminLogin() {
     <Container maxWidth="sm">
       <Box className="flex justify-center items-center min-h-screen py-12">
         <Paper elevation={3} className="p-8 w-full">
-          <Typography variant="h4" component="h1" className="text-center mb-6">
-            Admin Login
-          </Typography>
+          <div className="mb-6">
+            <svg
+              viewBox="0 0 100 100"
+              className="w-24 h-24 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M20 20 Q 35 10, 50 20 Q 65 30, 80 20 L 80 80 Q 65 70, 50 80 Q 35 90, 20 80 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                d="M20 30 Q 35 20, 50 30 Q 65 40, 80 30"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                d="M20 40 Q 35 30, 50 40 Q 65 50, 80 40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-4">LibrarySeats</h2>
+          <p className="text-sm">Admin Dashboard Access</p>
 
           {error && (
             <Alert severity="error" className="mb-4">

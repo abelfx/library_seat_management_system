@@ -119,10 +119,8 @@ const Login = () => {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold mb-4">ZenSoc</h2>
-          <p className="text-sm">
-            Not Your Average Web - Simplify, Organize, Achieve!
-          </p>
+          <h2 className="text-2xl font-bold mb-4">LibrarySeats</h2>
+          <p className="text-sm">Your Smart Library Seat Booking Solution</p>
         </div>
 
         {/* Right side - Login Form */}
