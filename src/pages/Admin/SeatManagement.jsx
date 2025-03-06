@@ -73,7 +73,7 @@ export default function SeatManagement() {
       setZones([]);
       setFilterZoneId("");
     }
-  }, [filterFloorId, zones]);
+  }, [filterFloorId]); // Removed zones dependency to prevent infinite loops
 
   useEffect(() => {
     if (filterZoneId) {
@@ -103,7 +103,13 @@ export default function SeatManagement() {
       const zonesData = await getZonesByFloor(floorId);
       setZones(zonesData);
       if (zonesData.length > 0) {
-        setFilterZoneId(zonesData[0].id);
+        // Only set default zone if current zone is empty or not in this floor's zones
+        if (
+          !filterZoneId ||
+          !zonesData.some((zone) => zone.id === filterZoneId)
+        ) {
+          setFilterZoneId(zonesData[0].id);
+        }
       } else {
         setFilterZoneId("");
         setSeats([]);
@@ -131,6 +137,11 @@ export default function SeatManagement() {
       setSeatNumber(seat.seatNumber);
       setSelectedFloorId(seat.floorId);
       setSelectedZoneId(seat.zoneId);
+
+      // Ensure zones are loaded for this floor
+      getZonesByFloor(seat.floorId).then((zonesData) => {
+        setZones(zonesData);
+      });
     } else {
       setEditingSeat(null);
       setSeatNumber("");
@@ -144,8 +155,7 @@ export default function SeatManagement() {
     setOpenDialog(false);
     setEditingSeat(null);
     setSeatNumber("");
-    setSelectedFloorId("");
-    setSelectedZoneId("");
+    // Don't reset floor and zone IDs to preserve context
   };
 
   const handleOpenBookDialog = (seat) => {
@@ -206,6 +216,12 @@ export default function SeatManagement() {
   };
 
   const handleBookSeat = async () => {
+    // Validate dates
+    if (new Date(bookingData.checkOut) <= new Date(bookingData.checkIn)) {
+      alert("Check-out date must be after check-in date");
+      return;
+    }
+
     try {
       await bookSeat(editingSeat.id, bookingData);
       handleCloseBookDialog();
@@ -214,6 +230,7 @@ export default function SeatManagement() {
       }
     } catch (error) {
       console.error("Error booking seat:", error);
+      alert("Failed to book seat: " + error.message);
     }
   };
 
@@ -471,15 +488,19 @@ export default function SeatManagement() {
             <Select
               value={selectedFloorId}
               onChange={(e) => {
-                setSelectedFloorId(e.target.value);
-                setSelectedZoneId("");
-                if (e.target.value) {
-                  getZonesByFloor(e.target.value).then((zonesData) => {
+                const newFloorId = e.target.value;
+                setSelectedFloorId(newFloorId);
+                setSelectedZoneId(""); // Reset zone when floor changes
+                // Fetch zones for the new floor
+                if (newFloorId) {
+                  getZonesByFloor(newFloorId).then((zonesData) => {
                     setZones(zonesData);
                     if (zonesData.length > 0) {
                       setSelectedZoneId(zonesData[0].id);
                     }
                   });
+                } else {
+                  setZones([]);
                 }
               }}
               label="Floor"
@@ -492,7 +513,10 @@ export default function SeatManagement() {
             </Select>
           </FormControl>
 
-          <FormControl fullWidth disabled={!selectedFloorId}>
+          <FormControl
+            fullWidth
+            disabled={!selectedFloorId || zones.length === 0}
+          >
             <InputLabel>Zone</InputLabel>
             <Select
               value={selectedZoneId}

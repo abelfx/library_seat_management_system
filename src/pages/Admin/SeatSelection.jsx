@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Box, Typography, Paper, Grid, Button, Chip } from "@mui/material";
 import { CheckCircle, Cancel, EventSeat } from "@mui/icons-material";

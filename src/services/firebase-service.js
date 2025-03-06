@@ -8,6 +8,7 @@ import {
   deleteDoc,
   query,
   where,
+  collectionGroup,
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { Floor, Zone, Seat } from "../firebase/model/model";
@@ -43,17 +44,17 @@ export const updateFloor = async (id, floorData) => {
 };
 
 export const deleteFloor = async (id) => {
-  // First get all zones in this floor
+  // Get all zones in this floor
   const zones = await getZonesByFloor(id);
 
-  // Delete all seats in each zone
+  // Delete all seats in each zone and then the zone
   for (const zone of zones) {
-    const seats = await getSeatsByZone(zone.id);
+    const seats = await getSeatsByZone(id, zone.id);
     for (const seat of seats) {
-      await deleteSeat(seat.id);
+      await deleteSeat(id, zone.id, seat.id);
     }
     // Delete the zone
-    await deleteZone(zone.id);
+    await deleteZone(id, zone.id);
   }
 
   // Finally delete the floor
@@ -63,101 +64,117 @@ export const deleteFloor = async (id) => {
 
 // Zone Services
 export const getZones = async () => {
-  const zonesCollection = collection(db, "zones");
-  const zoneSnapshot = await getDocs(zonesCollection);
-  return zoneSnapshot.docs.map((doc) =>
-    Zone.fromFirebase(doc.id, doc.data(), doc.data().floorId)
-  );
+  // Use collectionGroup to get all zones across all floors
+  const zonesGroup = collectionGroup(db, "zones");
+  const zoneSnapshot = await getDocs(zonesGroup);
+  return zoneSnapshot.docs.map((doc) => {
+    const data = doc.data();
+    // Extract floorId from the reference path
+    const floorId = doc.ref.path.split("/")[1];
+    return Zone.fromFirebase(doc.id, data, floorId);
+  });
 };
 
 export const getZonesByFloor = async (floorId) => {
-  const zonesCollection = collection(db, "zones");
-  const q = query(zonesCollection, where("floorId", "==", floorId));
-  const zoneSnapshot = await getDocs(q);
+  const zonesCollection = collection(db, `floors/${floorId}/zones`);
+  const zoneSnapshot = await getDocs(zonesCollection);
   return zoneSnapshot.docs.map((doc) =>
     Zone.fromFirebase(doc.id, doc.data(), floorId)
   );
 };
 
-export const getZone = async (id) => {
-  const zoneDoc = doc(db, "zones", id);
+export const getZone = async (floorId, zoneId) => {
+  const zoneDoc = doc(db, `floors/${floorId}/zones`, zoneId);
   const zoneSnapshot = await getDoc(zoneDoc);
   if (zoneSnapshot.exists()) {
-    return Zone.fromFirebase(
-      zoneSnapshot.id,
-      zoneSnapshot.data(),
-      zoneSnapshot.data().floorId
-    );
+    return Zone.fromFirebase(zoneSnapshot.id, zoneSnapshot.data(), floorId);
   }
   return null;
 };
 
 export const createZone = async (zoneData) => {
   const zone = new Zone(zoneData);
-  const docRef = await addDoc(collection(db, "zones"), zone.toJSON());
+  const floorId = zone.floorId;
+  const docRef = await addDoc(
+    collection(db, `floors/${floorId}/zones`),
+    zone.toJSON()
+  );
   return { ...zone, id: docRef.id };
 };
 
-export const updateZone = async (id, zoneData) => {
-  const zoneRef = doc(db, "zones", id);
+export const updateZone = async (floorId, zoneId, zoneData) => {
+  const zoneRef = doc(db, `floors/${floorId}/zones`, zoneId);
   await updateDoc(zoneRef, zoneData);
-  return { id, ...zoneData };
+  return { id: zoneId, ...zoneData };
 };
 
-export const deleteZone = async (id) => {
+export const deleteZone = async (floorId, zoneId) => {
   // First delete all seats in this zone
-  const seats = await getSeatsByZone(id);
+  const seats = await getSeatsByZone(floorId, zoneId);
   for (const seat of seats) {
-    await deleteSeat(seat.id);
+    await deleteSeat(floorId, zoneId, seat.id);
   }
 
   // Then delete the zone
-  await deleteDoc(doc(db, "zones", id));
-  return id;
+  await deleteDoc(doc(db, `floors/${floorId}/zones`, zoneId));
+  return zoneId;
 };
 
 // Seat Services
 export const getSeats = async () => {
-  const seatsCollection = collection(db, "seats");
-  const seatSnapshot = await getDocs(seatsCollection);
+  // Use collectionGroup to get all seats across all zones and floors
+  const seatsGroup = collectionGroup(db, "seats");
+  const seatSnapshot = await getDocs(seatsGroup);
   return seatSnapshot.docs.map((doc) => {
     const data = doc.data();
-    return Seat.fromFirebase(doc.id, data, data.zoneId, data.floorId);
+    const pathSegments = doc.ref.path.split("/");
+    const floorId = pathSegments[1];
+    const zoneId = pathSegments[3];
+    return Seat.fromFirebase(doc.id, data, zoneId, floorId);
   });
 };
 
-export const getSeatsByZone = async (zoneId) => {
-  const seatsCollection = collection(db, "seats");
-  const q = query(seatsCollection, where("zoneId", "==", zoneId));
-  const seatSnapshot = await getDocs(q);
+export const getSeatsByZone = async (floorId, zoneId) => {
+  const seatsCollection = collection(
+    db,
+    `floors/${floorId}/zones/${zoneId}/seats`
+  );
+  const seatSnapshot = await getDocs(seatsCollection);
   return seatSnapshot.docs.map((doc) => {
     const data = doc.data();
-    return Seat.fromFirebase(doc.id, data, zoneId, data.floorId);
+    return Seat.fromFirebase(doc.id, data, zoneId, floorId);
   });
 };
 
 export const getSeatsByFloor = async (floorId) => {
-  const seatsCollection = collection(db, "seats");
-  const q = query(seatsCollection, where("floorId", "==", floorId));
-  const seatSnapshot = await getDocs(q);
-  return seatSnapshot.docs.map((doc) => {
-    const data = doc.data();
-    return Seat.fromFirebase(doc.id, data, data.zoneId, floorId);
-  });
+  // Get all zones in the floor
+  const zones = await getZonesByFloor(floorId);
+
+  // Get all seats from each zone
+  let allSeats = [];
+  for (const zone of zones) {
+    const seats = await getSeatsByZone(floorId, zone.id);
+    allSeats = [...allSeats, ...seats];
+  }
+
+  return allSeats;
 };
 
-export const getSeat = async (id) => {
-  const seatDoc = doc(db, "seats", id);
+export const getSeat = async (floorId, zoneId, seatId) => {
+  const seatDoc = doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId);
   const seatSnapshot = await getDoc(seatDoc);
   if (seatSnapshot.exists()) {
     const data = seatSnapshot.data();
-    return Seat.fromFirebase(seatSnapshot.id, data, data.zoneId, data.floorId);
+    return Seat.fromFirebase(seatSnapshot.id, data, zoneId, floorId);
   }
   return null;
 };
 
 export const createSeat = async (seatData) => {
   const seat = new Seat(seatData);
+  const floorId = seat.floorId;
+  const zoneId = seat.zoneId;
+
   const formattedData = {
     ...seat.toJSON(),
     "seat-number": seat.seatNumber,
@@ -165,12 +182,15 @@ export const createSeat = async (seatData) => {
     "check-out": seat.checkOut,
   };
 
-  const docRef = await addDoc(collection(db, "seats"), formattedData);
+  const docRef = await addDoc(
+    collection(db, `floors/${floorId}/zones/${zoneId}/seats`),
+    formattedData
+  );
   return { ...seat, id: docRef.id };
 };
 
-export const updateSeat = async (id, seatData) => {
-  const seatRef = doc(db, "seats", id);
+export const updateSeat = async (floorId, zoneId, seatId, seatData) => {
+  const seatRef = doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId);
 
   // Format data to match Firestore structure
   const formattedData = {
@@ -190,23 +210,23 @@ export const updateSeat = async (id, seatData) => {
   }
 
   await updateDoc(seatRef, formattedData);
-  return { id, ...seatData };
+  return { id: seatId, ...seatData };
 };
 
-export const deleteSeat = async (id) => {
-  await deleteDoc(doc(db, "seats", id));
-  return id;
+export const deleteSeat = async (floorId, zoneId, seatId) => {
+  await deleteDoc(doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId));
+  return seatId;
 };
 
-export const bookSeat = async (id, bookingData) => {
-  const seat = await getSeat(id);
+export const bookSeat = async (floorId, zoneId, seatId, bookingData) => {
+  const seat = await getSeat(floorId, zoneId, seatId);
   if (!seat) {
     throw new Error("Seat not found");
   }
 
   seat.book(bookingData);
 
-  return updateSeat(id, {
+  return updateSeat(floorId, zoneId, seatId, {
     isBooked: seat.isBooked,
     checkIn: seat.checkIn,
     checkOut: seat.checkOut,
@@ -215,15 +235,15 @@ export const bookSeat = async (id, bookingData) => {
   });
 };
 
-export const releaseSeat = async (id) => {
-  const seat = await getSeat(id);
+export const releaseSeat = async (floorId, zoneId, seatId) => {
+  const seat = await getSeat(floorId, zoneId, seatId);
   if (!seat) {
     throw new Error("Seat not found");
   }
 
   seat.release();
 
-  return updateSeat(id, {
+  return updateSeat(floorId, zoneId, seatId, {
     isBooked: seat.isBooked,
     checkIn: seat.checkIn,
     checkOut: seat.checkOut,
