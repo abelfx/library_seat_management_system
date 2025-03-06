@@ -1,15 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
 import { auth, db } from "../../firebase/firebase";
 
 const EmailVerification = () => {
@@ -17,49 +9,60 @@ const EmailVerification = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const navigate = useNavigate();
 
-  // Check if user exists
-  const checkUserExists = async (email) => {
-    try {
-      const userDocRef = doc(db, "users", email);
-      const userDoc = await getDoc(userDocRef);
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
 
-      if (userDoc.exists()) {
-        return true;
-      }
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
-      const usersCollection = collection(db, "users");
-      const q = query(usersCollection, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-
-      return !querySnapshot.empty;
-    } catch (error) {
-      console.error("Error checking user:", error);
-      return false;
-    }
-  };
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Send password reset email
   const handleSendEmail = async () => {
     setError("");
     setLoading(true);
 
+    // Check if offline
+    if (isOffline) {
+      setError(
+        "You appear to be offline. Please check your internet connection."
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
-      const userExists = await checkUserExists(email);
-
-      if (!userExists) {
-        throw new Error("No account found with this email address");
-      }
-
       await sendPasswordResetEmail(auth, email);
       setEmailSent(true);
     } catch (error) {
       console.error("Failed to send verification email:", error);
-      setError(
-        error.message ||
-          "Could not send email. Please check your email address and try again."
-      );
+
+      // Handle specific Firebase Auth errors
+      switch (error.code) {
+        case "auth/user-not-found":
+          setError("No account found with this email address.");
+          break;
+        case "auth/invalid-email":
+          setError("Please enter a valid email address.");
+          break;
+        case "auth/too-many-requests":
+          setError("Too many attempts. Please try again later.");
+          break;
+        case "auth/network-request-failed":
+          setError("Network error. Please check your internet connection.");
+          break;
+        default:
+          setError("Could not send reset email. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -110,6 +113,14 @@ const EmailVerification = () => {
         {/* Right side - Reset Password Form */}
         <div className="w-1/2 p-8 flex items-center">
           <div className="w-full">
+            {/* Show offline warning if applicable */}
+            {isOffline && (
+              <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-md text-sm">
+                You are currently offline. Please check your internet
+                connection.
+              </div>
+            )}
+
             <h1 className="text-2xl font-bold mb-2">
               {emailSent ? "Email Sent" : "Reset Password"}
             </h1>
@@ -146,8 +157,10 @@ const EmailVerification = () => {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full p-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
+                  disabled={loading || isOffline}
+                  className={`w-full p-3 ${
+                    isOffline ? "bg-gray-400" : "bg-gray-900 hover:bg-gray-800"
+                  } text-white rounded-md transition-colors`}
                 >
                   {loading ? "Sending..." : "Send Reset Link"}
                 </button>
