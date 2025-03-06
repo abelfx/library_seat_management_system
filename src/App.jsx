@@ -16,6 +16,10 @@ import LandingPage from "./pages/LandingPage";
 import AvailableFloor from "./pages/AvailableFloor/AvailableFloor";
 import AvailableSeat from "./pages/AvailableSeat/AvailableSeat";
 import Profile from "./pages/Profile/Profile";
+import AdminLogin from "./pages/Auth/AdminLogin";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import SeatSelectionPage from "./pages/Admin/SeatSelectionPage";
+import Unauthorized from "./pages/Auth/Unauthorized";
 
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
@@ -52,6 +56,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/seat-selection" element={<SeatSelectionPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
