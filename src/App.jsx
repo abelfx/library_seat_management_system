@@ -11,7 +11,7 @@ import ForgotPassword from "./pages/Auth/ForgotPassword";
 import RecoverEmail from "./pages/Auth/RecoverEmail";
 import EmailVerification from "./pages/Auth/verifyEmail";
 import { auth } from "./firebase/firebase";
-import Home from "./pages/home/home";
+import Home from './pages/Home/Home'
 import LandingPage from "./pages/LandingPage";
 import AvailableFloor from "./pages/AvailableFloor/AvailableFloor";
 import AvailableSeat from "./pages/AvailableSeat/AvailableSeat";
