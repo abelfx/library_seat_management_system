@@ -9,52 +9,36 @@ import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/SignUp";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import RecoverEmail from "./pages/Auth/RecoverEmail";
-
 import EmailVerification from "./pages/Auth/verifyEmail";
 import { auth } from "./firebase/firebase";
-import Home from './pages/home/home'
+import Home from "./pages/home/home";
+import LandingPage from "./pages/LandingPage";
+
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
   return auth.currentUser ? children : <Navigate to="/login" />;
 };
+
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Welcome />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/email-verification" element={<EmailVerification />} />
-        {/* <Route
-          path="/onboarding/business-details"
-          element={
-            <ProtectedRoute>
-              <BusinessDetails />
-            </ProtectedRoute>
-          }
-        /> */}
-        {/* <Route
+        <Route path="/recover-email" element={<RecoverEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route
           path="/home"
           element={
             <ProtectedRoute>
               <Home />
             </ProtectedRoute>
           }
-        /> */}
-        {/* <Route
-          path="/onboarding/confirmation"
-          element={
-            <ProtectedRoute>
-              <Confirmation />
-            </ProtectedRoute>
-          }
-        /> */}
-        <Route path="/recover-email" element={<RecoverEmail />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="*" element={<Navigate to="/login" />} />
-        <Route path='/home' element={<Home/>}
-        
         />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
