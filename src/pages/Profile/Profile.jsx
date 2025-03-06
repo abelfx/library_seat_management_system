@@ -102,7 +102,7 @@ const Profile = () => {
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-800 text-center text-gray-400 text-sm">
-            EduWave - Version 1.0.0
+            LibrarySeats - Version 1.0.0
           </div>
         </motion.div>
       </div>

@@ -1,4 +1,4 @@
-# 📚 EduWave - Library Seat Booking System
+# 📚 LibrarySeats - Library Seat Booking System
 
 A modern, real-time library seat booking system built with Vite, React, and Firebase.
 
@@ -53,7 +53,7 @@ A modern, real-time library seat booking system built with Vite, React, and Fire
 
 1. **Landing Page**
 
-   - Introduction to EduWave
+   - Introduction to LibrarySeats
    - Feature showcase
    - Quick access to login/signup
 

@@ -383,7 +383,7 @@ export default function SeatAvailability() {
             <div className="w-10 h-10 border-2 border-white rounded-lg flex items-center justify-center">
               <span className="text-2xl">📚</span>
             </div>
-            <span className="text-xl font-bold">EduWave</span>
+            <span className="text-xl font-bold">LibrarySeats</span>
           </div>
 
           {/* Navigation Links */}
@@ -565,7 +565,7 @@ export default function SeatAvailability() {
             <div className="w-8 h-8 border-2 border-white rounded-lg flex items-center justify-center">
               <span className="text-xl">📚</span>
             </div>
-            <span className="text-lg font-bold">EduWave</span>
+            <span className="text-lg font-bold">LibrarySeats</span>
           </div>
         </div>
       </div>
