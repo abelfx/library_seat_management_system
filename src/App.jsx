@@ -12,6 +12,7 @@ import RecoverEmail from "./pages/Auth/RecoverEmail";
 
 import EmailVerification from "./pages/Auth/verifyEmail";
 import { auth } from "./firebase/firebase";
+import Home from './pages/home/home'
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
   return auth.currentUser ? children : <Navigate to="/login" />;
@@ -51,6 +52,9 @@ function App() {
         <Route path="/recover-email" element={<RecoverEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/login" />} />
+        <Route path='/home' element={<Home/>}
+        
+        />
       </Routes>
     </Router>
   );
