@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { getAuth, onAuthStateChanged, reload } from "firebase/auth";
+import {
+  getAuth,
+  onAuthStateChanged,
+  reload,
+  sendEmailVerification,
+} from "firebase/auth";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { Mail, CheckCircle, RefreshCw } from "lucide-react";
 
@@ -68,67 +73,121 @@ const EmailVerification = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-300 via-blue-500 to-blue-700 p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-        {isVerified ? (
-          <div className="space-y-4">
-            <CheckCircle className="mx-auto text-green-500" size={64} />
-            <h1 className="text-2xl font-bold text-gray-800">
-              Email Verified!
-            </h1>
-            <p className="text-gray-600">
-              Your email has been successfully verified. You will be redirected
-              to the login page shortly.
-            </p>
-            <Link
-              to="/login"
-              className="block w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition duration-200"
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl overflow-hidden shadow-xl flex max-w-3xl w-full">
+        {/* Left side - Black Panel */}
+        <div className="w-1/2 bg-black text-white p-8 flex flex-col items-center justify-center text-center">
+          <div className="mb-6">
+            <svg
+              viewBox="0 0 100 100"
+              className="w-24 h-24 text-white"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              Go to Login
-            </Link>
+              <path
+                d="M20 20 Q 35 10, 50 20 Q 65 30, 80 20 L 80 80 Q 65 70, 50 80 Q 35 90, 20 80 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                d="M20 30 Q 35 20, 50 30 Q 65 40, 80 30"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                d="M20 40 Q 35 30, 50 40 Q 65 50, 80 40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+            </svg>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <Mail className="mx-auto text-blue-500" size={64} />
-            <h1 className="text-2xl font-bold text-gray-800">
-              Verify Your Email
-            </h1>
-            <p className="text-gray-600">
-              We've sent a verification link to{" "}
-              <span className="font-medium">{email}</span>
-            </p>
-            <p className="text-gray-500 text-sm">
-              Please check your inbox and click the verification link to
-              complete your registration. Check your spam folder if you don't
-              see it.
-            </p>
+          <h2 className="text-2xl font-bold mb-4">ZenSoc</h2>
+          <p className="text-sm">
+            Not Your Average Web - Simplify, Organize, Achieve!
+          </p>
+        </div>
 
-            {error && (
-              <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
-                {error}
+        {/* Right side - Verification Content */}
+        <div className="w-1/2 p-8 flex items-center">
+          <div className="w-full">
+            {isVerified ? (
+              <div className="text-center">
+                <CheckCircle
+                  className="mx-auto text-green-500 mb-4"
+                  size={48}
+                />
+                <h1 className="text-2xl font-bold mb-2">Email Verified!</h1>
+                <p className="text-gray-600 mb-8">
+                  Your email has been successfully verified. You will be
+                  redirected to the login page shortly.
+                </p>
+                <Link
+                  to="/login"
+                  className="w-full p-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors inline-block"
+                >
+                  Go to Login
+                </Link>
+              </div>
+            ) : (
+              <div>
+                <div className="text-center mb-8">
+                  <Mail className="mx-auto text-gray-900 mb-4" size={48} />
+                  <h1 className="text-2xl font-bold mb-2">Verify Your Email</h1>
+                  <p className="text-gray-600">
+                    We've sent a verification link to{" "}
+                    <span className="font-medium">{email}</span>
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <p className="text-gray-600 text-sm">
+                    Please check your inbox and click the verification link to
+                    complete your registration. Check your spam folder if you
+                    don't see it.
+                  </p>
+
+                  <button
+                    onClick={checkVerification}
+                    disabled={loading}
+                    className="w-full p-3 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors flex items-center justify-center"
+                  >
+                    <RefreshCw
+                      className={`mr-2 ${loading ? "animate-spin" : ""}`}
+                      size={20}
+                    />
+                    {loading ? "Checking..." : "Check Status"}
+                  </button>
+
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={loading}
+                    className="w-full p-3 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Resend Verification Email
+                  </button>
+                </div>
+
+                <p className="text-center mt-6 text-sm text-gray-600">
+                  Already verified?{" "}
+                  <Link
+                    to="/login"
+                    className="text-blue-500 hover:underline font-medium"
+                  >
+                    Login Now
+                  </Link>
+                </p>
               </div>
             )}
-
-            <div className="pt-4">
-              <button
-                onClick={checkVerification}
-                disabled={loading}
-                className="mr-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition duration-200 disabled:bg-blue-300"
-              >
-                <RefreshCw className="inline mr-1" size={16} />
-                {loading ? "Checking..." : "Check Status"}
-              </button>
-
-              <button
-                onClick={handleResendVerification}
-                disabled={loading}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition duration-200 disabled:bg-gray-100"
-              >
-                Resend Email
-              </button>
-            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
