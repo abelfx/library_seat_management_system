@@ -249,16 +249,10 @@ export default function SeatAvailability() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        Error: {error}
+      <div className="min-h-screen bg-white p-6">
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-gray-900">Loading...</div>
+        </div>
       </div>
     );
   }
@@ -266,113 +260,142 @@ export default function SeatAvailability() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-yellow-500 p-4 bg-black text-white">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 border-2 border-white flex items-center justify-center">
-              <span className="text-xl">📚</span>
-            </div>
-            <span className="text-xl font-bold">EduWave</span>
-          </div>
-          <nav className="flex gap-6">
-            <Link to="#" className="hover:text-yellow-500">
-              Home
-            </Link>
-            <Link to="#" className="hover:text-yellow-500">
-              Profile
-            </Link>
-          </nav>
+      <nav className="bg-white py-4 px-6 flex justify-between items-center border-b">
+        <div className="flex items-center gap-2">
+          <div className="text-black text-xl font-bold">EduWave</div>
         </div>
-      </header>
+        <div className="flex items-center gap-6">
+          <Link to="/home" className="text-gray-600 hover:text-gray-900">
+            Home
+          </Link>
+          <Link to="/profile" className="text-gray-600 hover:text-gray-900">
+            Profile
+          </Link>
+        </div>
+      </nav>
 
-      {/* Main Content */}
-      <main className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-8 text-black">Available Seats</h1>
+      <div className="p-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          Available Seats
+        </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Status Guide and Reservations */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-black">Status Guide</h2>
-            <div className="space-y-4 text-black">
-              <div className="flex items-center gap-2">
-                <Check className="text-green-500" />
-                <span>Available</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="text-yellow-500" />
-                <span>Reserved</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="text-blue-500" />
-                <span>Occupied</span>
-              </div>
+        {/* Status Guide */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Status Guide
+          </h2>
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2">
+              <Check className="text-green-500" />
+              <span className="text-gray-600">Available</span>
             </div>
+            <div className="flex items-center gap-2">
+              <Clock className="text-yellow-500" />
+              <span className="text-gray-600">Reserved</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="text-blue-500" />
+              <span className="text-gray-600">Occupied</span>
+            </div>
+          </div>
+        </div>
 
-            {/* Reserved Card */}
-            {reservations.length > 0 && (
-              <div className="bg-black text-white border border-gray-800 rounded-lg p-4">
-                <h3 className="text-xl font-bold mb-4">Reserved</h3>
-                {reservations.map((reservation) => (
-                  <div
-                    key={reservation.id}
-                    className="bg-white text-black p-4 rounded-lg mb-2"
-                  >
-                    <h4 className="font-bold">
-                      Zone {reservation.zoneId} Seat {reservation.seatNumber}
-                    </h4>
-                    <p className="text-sm">
-                      Check-in Time:{" "}
-                      {new Date(reservation.checkIn).toLocaleTimeString()} LT
-                    </p>
-                    <p className="text-sm">
-                      Check-out Time:{" "}
-                      {new Date(reservation.checkOut).toLocaleTimeString()} LT
-                    </p>
+        {error && (
+          <div className="bg-red-50 text-red-500 p-4 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Reserved Section */}
+        {reservations.length > 0 && (
+          <div className="bg-black text-white rounded-lg p-4 mb-8">
+            <h3 className="text-xl font-bold mb-4">Reserved</h3>
+            {reservations.map((reservation) => (
+              <div key={reservation.id} className="bg-gray-800 rounded p-4">
+                <div className="text-sm">
+                  <div>
+                    Zone {reservation.zoneId} Seat {reservation.seatNumber}
                   </div>
-                ))}
+                  <div>
+                    Check-in Time:{" "}
+                    {new Date(reservation.checkIn).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    LT
+                  </div>
+                  <div>
+                    Check-out Time:{" "}
+                    {new Date(reservation.checkOut).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    LT
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-
-          {/* Floor Cards - First Column */}
-          <div className="space-y-6">
-            {floors.slice(0, Math.ceil(floors.length / 2)).map((floor) => (
-              <FloorCard
-                key={floor.id}
-                floor={floor}
-                available={floorStats[floor.id]?.available || 0}
-                reserved={floorStats[floor.id]?.reserved || 0}
-                occupied={floorStats[floor.id]?.occupied || 0}
-                onClick={() => setSelectedFloor(floor)}
-                onSelect={handleFloorSelect}
-              />
             ))}
           </div>
+        )}
 
-          {/* Floor Cards - Second Column */}
-          <div className="space-y-6">
-            {floors.slice(Math.ceil(floors.length / 2)).map((floor) => (
-              <FloorCard
-                key={floor.id}
-                floor={floor}
-                available={floorStats[floor.id]?.available || 0}
-                reserved={floorStats[floor.id]?.reserved || 0}
-                occupied={floorStats[floor.id]?.occupied || 0}
-                onClick={() => setSelectedFloor(floor)}
-                onSelect={handleFloorSelect}
-              />
-            ))}
-          </div>
+        {/* Floor Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {floors.map((floor) => (
+            <div
+              key={floor.id}
+              className="bg-black text-white rounded-lg p-4 cursor-pointer hover:ring-2 hover:ring-yellow-500 transition-all"
+              onClick={() => {
+                setSelectedFloor(floor);
+                handleFloorSelect(floor);
+              }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 className="text-white" />
+                <h3 className="text-xl font-bold">Floor {floor.floorName}</h3>
+              </div>
+
+              <div className="flex justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="text-green-500" />
+                  <div>
+                    <div className="text-lg font-bold">
+                      {floorStats[floor.id]?.available || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Available</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock className="text-yellow-500" />
+                  <div>
+                    <div className="text-lg font-bold">
+                      {floorStats[floor.id]?.reserved || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Reserved</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <User className="text-blue-500" />
+                  <div>
+                    <div className="text-lg font-bold">
+                      {floorStats[floor.id]?.occupied || 0}
+                    </div>
+                    <div className="text-sm text-gray-300">Occupied</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Modal */}
         {selectedFloor && (
           <FloorDetailsModal
             floor={selectedFloor}
             onClose={() => setSelectedFloor(null)}
           />
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -59,8 +59,8 @@ const Login = () => {
         localStorage.removeItem("rememberEmail");
       }
 
-      // Navigate to dashboard or home page
-      navigate("/onboarding/business-details");
+      // Navigate to home page after successful login
+      navigate("/home");
     } catch (error) {
       console.error("Error logging in:", error);
 

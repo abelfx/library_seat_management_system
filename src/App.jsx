@@ -15,6 +15,7 @@ import Home from "./pages/home/home";
 import LandingPage from "./pages/LandingPage";
 import AvailableFloor from "./pages/AvailableFloor/AvailableFloor";
 import AvailableSeat from "./pages/AvailableSeat/AvailableSeat";
+import Profile from "./pages/Profile/Profile";
 
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
