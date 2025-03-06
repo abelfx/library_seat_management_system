@@ -13,6 +13,8 @@ import EmailVerification from "./pages/Auth/verifyEmail";
 import { auth } from "./firebase/firebase";
 import Home from "./pages/home/home";
 import LandingPage from "./pages/LandingPage";
+import AvailableFloor from "./pages/AvailableFloor/AvailableFloor";
+import AvailableSeat from "./pages/AvailableSeat/AvailableSeat";
 
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
@@ -30,6 +32,9 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/recover-email" element={<RecoverEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/available-floor" element={<AvailableFloor />} />
+        <Route path="/available-seat" element={<AvailableSeat />} />
+        <Route path="/available-seats/:floorId" element={<AvailableSeat />} />
         <Route
           path="/home"
           element={

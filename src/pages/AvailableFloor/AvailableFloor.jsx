@@ -105,15 +105,13 @@ export default function SeatAvailability() {
           <FloorCard floor={5} available={12} reserved={0} occupied={0} />
         </div>
 
-       <div className="bg-black rounded-2xl mt-7 h-[200px] w-[250px] items-center flex flex-col p-7">
-        <h1 className="text-white font-extrabold mb-3">Reserved</h1>
-        <div className="bg-white rounded-xl h-[100px] p-1">
-          <h1 className="font-extrabold">Zone 3 Seat 1</h1>
-          <p>Check-in Time 8:00LT check-out Time : 10:00LT</p>
-
+        <div className="bg-black rounded-2xl mt-7 h-[200px] w-[250px] items-center flex flex-col p-7">
+          <h1 className="text-white font-extrabold mb-3">Reserved</h1>
+          <div className="bg-white rounded-xl h-[100px] p-1">
+            <h1 className="font-extrabold">Zone 3 Seat 1</h1>
+            <p>Check-in Time 8:00LT check-out Time : 10:00LT</p>
+          </div>
         </div>
-
-       </div>
       </main>
 
       <footer className="p-4 text-xs text-gray-500">Desktop - 5</footer>
