@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -19,6 +17,7 @@ import {
   Badge,
   InputBase,
   alpha,
+  CircularProgress,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -31,29 +30,87 @@ import {
   EventSeat as SeatIcon,
   SupervisorAccount as AdminIcon,
 } from "@mui/icons-material";
+import { db } from "../../firebase/firebase"; // Make sure to create this config file
+import { collection, getDocs } from "firebase/firestore";
 import FloorManagement from "./FloorManagement";
 import ZoneManagement from "./ZoneManagement";
 import SeatManagement from "./SeatManagement";
 import AdminManagement from "./AdminManagement";
+import ProfileSettings from "./ProfileSettings";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(0);
   const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [summaryData, setSummaryData] = useState({
+    totalFloors: 0,
+    totalZones: 0,
+    totalSeats: 0,
+    availableSeats: 0,
+    occupancyRate: "0%",
+  });
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
 
-  const summaryData = {
-    totalFloors: 5,
-    totalZones: 12,
-    totalSeats: 240,
-    availableSeats: 87,
-    occupancyRate: "64%",
-  };
+  useEffect(() => {
+    // Fetch data from Firebase when component mounts
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch floors data
+        const floorsSnapshot = await getDocs(collection(db, "floors"));
+        const totalFloors = floorsSnapshot.size;
+
+        // Fetch zones data
+        const zonesSnapshot = await getDocs(collection(db, "zones"));
+        const totalZones = zonesSnapshot.size;
+
+        // Fetch seats data
+        const seatsSnapshot = await getDocs(collection(db, "seats"));
+        const seats = seatsSnapshot.docs.map((doc) => doc.data());
+        const totalSeats = seats.length;
+        const availableSeats = seats.filter((seat) => !seat.isOccupied).length;
+
+        // Calculate occupancy rate
+        const occupancyRate =
+          totalSeats > 0
+            ? Math.round(((totalSeats - availableSeats) / totalSeats) * 100)
+            : 0;
+
+        // Update state with fetched data
+        setSummaryData({
+          totalFloors,
+          totalZones,
+          totalSeats,
+          availableSeats,
+          occupancyRate: `${occupancyRate}%`,
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
+    setShowProfileSettings(false);
+  };
+
+  const handleProfileClick = () => {
+    setShowProfileSettings(true);
+    setActiveTab(-1); // Set to invalid tab index to show none are selected
   };
 
   // Get the appropriate component based on active tab
   const getActiveComponent = () => {
+    if (showProfileSettings) {
+      return <ProfileSettings />;
+    }
+
     switch (activeTab) {
       case 0:
         return <FloorManagement />;
@@ -130,7 +187,11 @@ export default function AdminDashboard() {
           <IconButton color="inherit" sx={{ ml: 1 }}>
             <SettingsIcon />
           </IconButton>
-          <IconButton color="inherit" sx={{ ml: 1 }}>
+          <IconButton
+            color="inherit"
+            sx={{ ml: 1 }}
+            onClick={handleProfileClick}
+          >
             <Avatar
               sx={{
                 width: 32,
@@ -151,216 +212,257 @@ export default function AdminDashboard() {
           component="h1"
           sx={{ mb: 4, fontWeight: "bold" }}
         >
-          Seat Booking Admin Dashboard
+          {showProfileSettings
+            ? "Profile Settings"
+            : "Seat Booking Admin Dashboard"}
         </Typography>
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                height: "100%",
-                borderRadius: 2,
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-5px)" },
-              }}
-            >
-              <CardContent
+        {!showProfileSettings && (
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {loading ? (
+              <Box
                 sx={{
                   display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: 3,
+                  justifyContent: "center",
+                  width: "100%",
+                  py: 8,
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                    <BuildingIcon />
-                  </Avatar>
-                  <Typography variant="h6" color="textSecondary">
-                    Floors
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h3"
-                  component="div"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  {summaryData.totalFloors}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ mt: 1 }}
-                >
-                  Total floors in the building
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                height: "100%",
-                borderRadius: 2,
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-5px)" },
-              }}
-            >
-              <CardContent
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: 3,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar
-                    sx={{ bgcolor: theme.palette.secondary.light, mr: 2 }}
+                <CircularProgress />
+              </Box>
+            ) : (
+              <>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      transition: "transform 0.2s",
+                      "&:hover": { transform: "translateY(-5px)" },
+                    }}
                   >
-                    <ZoneIcon />
-                  </Avatar>
-                  <Typography variant="h6" color="textSecondary">
-                    Zones
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h3"
-                  component="div"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  {summaryData.totalZones}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ mt: 1 }}
-                >
-                  Total zones across all floors
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        p: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                      >
+                        <Avatar
+                          sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}
+                        >
+                          <BuildingIcon />
+                        </Avatar>
+                        <Typography variant="h6" color="textSecondary">
+                          Floors
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="h3"
+                        component="div"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {summaryData.totalFloors}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
+                        Total floors in the building
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                height: "100%",
-                borderRadius: 2,
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-5px)" },
-              }}
-            >
-              <CardContent
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: 3,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar sx={{ bgcolor: theme.palette.error.light, mr: 2 }}>
-                    <SeatIcon />
-                  </Avatar>
-                  <Typography variant="h6" color="textSecondary">
-                    Seats
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h3"
-                  component="div"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  {summaryData.totalSeats}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ mt: 1 }}
-                >
-                  {summaryData.availableSeats} seats available
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      transition: "transform 0.2s",
+                      "&:hover": { transform: "translateY(-5px)" },
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        p: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                      >
+                        <Avatar
+                          sx={{ bgcolor: theme.palette.secondary.light, mr: 2 }}
+                        >
+                          <ZoneIcon />
+                        </Avatar>
+                        <Typography variant="h6" color="textSecondary">
+                          Zones
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="h3"
+                        component="div"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {summaryData.totalZones}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
+                        Total zones across all floors
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                height: "100%",
-                borderRadius: 2,
-                transition: "transform 0.2s",
-                "&:hover": { transform: "translateY(-5px)" },
-              }}
-            >
-              <CardContent
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: 3,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar sx={{ bgcolor: theme.palette.success.light, mr: 2 }}>
-                    <AdminIcon />
-                  </Avatar>
-                  <Typography variant="h6" color="textSecondary">
-                    Occupancy
-                  </Typography>
-                </Box>
-                <Typography
-                  variant="h3"
-                  component="div"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  {summaryData.occupancyRate}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ mt: 1 }}
-                >
-                  Current occupancy rate
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      transition: "transform 0.2s",
+                      "&:hover": { transform: "translateY(-5px)" },
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        p: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                      >
+                        <Avatar
+                          sx={{ bgcolor: theme.palette.error.light, mr: 2 }}
+                        >
+                          <SeatIcon />
+                        </Avatar>
+                        <Typography variant="h6" color="textSecondary">
+                          Seats
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="h3"
+                        component="div"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {summaryData.totalSeats}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
+                        {summaryData.availableSeats} seats available
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
 
-        {/* Tabs Navigation */}
-        <Paper
-          elevation={3}
-          sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}
-        >
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            indicatorColor="primary"
-            textColor="primary"
-            variant="fullWidth"
-            sx={{
-              "& .MuiTab-root": {
-                py: 2,
-                fontSize: "1rem",
-                fontWeight: "medium",
-                transition: "all 0.2s",
-                "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.05) },
-              },
-            }}
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card
+                    elevation={2}
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      transition: "transform 0.2s",
+                      "&:hover": { transform: "translateY(-5px)" },
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        p: 3,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                      >
+                        <Avatar
+                          sx={{ bgcolor: theme.palette.success.light, mr: 2 }}
+                        >
+                          <AdminIcon />
+                        </Avatar>
+                        <Typography variant="h6" color="textSecondary">
+                          Occupancy
+                        </Typography>
+                      </Box>
+                      <Typography
+                        variant="h3"
+                        component="div"
+                        sx={{ fontWeight: "bold" }}
+                      >
+                        {summaryData.occupancyRate}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ mt: 1 }}
+                      >
+                        Current occupancy rate
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </>
+            )}
+          </Grid>
+        )}
+
+        {!showProfileSettings && (
+          /* Tabs Navigation */
+          <Paper
+            elevation={3}
+            sx={{ borderRadius: 2, overflow: "hidden", mb: 4 }}
           >
-            <Tab label="Floors" icon={<BuildingIcon />} iconPosition="start" />
-            <Tab label="Zones" icon={<ZoneIcon />} iconPosition="start" />
-            <Tab label="Seats" icon={<SeatIcon />} iconPosition="start" />
-            <Tab label="Admins" icon={<AdminIcon />} iconPosition="start" />
-          </Tabs>
-        </Paper>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              indicatorColor="primary"
+              textColor="primary"
+              variant="fullWidth"
+              sx={{
+                "& .MuiTab-root": {
+                  py: 2,
+                  fontSize: "1rem",
+                  fontWeight: "medium",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  },
+                },
+              }}
+            >
+              <Tab
+                label="Floors"
+                icon={<BuildingIcon />}
+                iconPosition="start"
+              />
+              <Tab label="Zones" icon={<ZoneIcon />} iconPosition="start" />
+              <Tab label="Seats" icon={<SeatIcon />} iconPosition="start" />
+              <Tab label="Admins" icon={<AdminIcon />} iconPosition="start" />
+            </Tabs>
+          </Paper>
+        )}
 
         {/* Content Area */}
         <Paper elevation={2} sx={{ p: 3, borderRadius: 2, minHeight: "400px" }}>

@@ -73,22 +73,20 @@ export default function SeatManagement() {
       setZones([]);
       setFilterZoneId("");
     }
-  }, [filterFloorId]); // Removed zones dependency to prevent infinite loops
+  }, [filterFloorId]);
 
   useEffect(() => {
-    if (filterZoneId) {
+    if (filterZoneId && filterFloorId) {
       fetchSeatsByZone(filterZoneId);
-    } else if (filterFloorId) {
-      // Could fetch all seats for a floor here if needed
-      setSeats([]);
     } else {
       setSeats([]);
     }
-  }, [filterZoneId]);
+  }, [filterZoneId, filterFloorId]);
 
   const fetchFloors = async () => {
     try {
       const floorsData = await getFloors();
+      console.log("Fetched floors:", floorsData);
       setFloors(floorsData);
       if (floorsData.length > 0 && !filterFloorId) {
         setFilterFloorId(floorsData[0].id);
@@ -101,15 +99,10 @@ export default function SeatManagement() {
   const fetchZonesByFloor = async (floorId) => {
     try {
       const zonesData = await getZonesByFloor(floorId);
+      console.log("Fetched zones for floor", floorId, ":", zonesData);
       setZones(zonesData);
       if (zonesData.length > 0) {
-        // Only set default zone if current zone is empty or not in this floor's zones
-        if (
-          !filterZoneId ||
-          !zonesData.some((zone) => zone.id === filterZoneId)
-        ) {
-          setFilterZoneId(zonesData[0].id);
-        }
+        setFilterZoneId(zonesData[0].id);
       } else {
         setFilterZoneId("");
         setSeats([]);
@@ -122,7 +115,11 @@ export default function SeatManagement() {
   const fetchSeatsByZone = async (zoneId) => {
     setLoading(true);
     try {
-      const seatsData = await getSeatsByZone(zoneId);
+      console.log("Fetching seats for zone:", zoneId);
+      // Make sure we're passing the correct parameters to getSeatsByZone
+      // Check your firebase-service.js implementation to ensure it matches
+      const seatsData = await getSeatsByZone(filterFloorId, zoneId);
+      console.log("Seats data received:", seatsData);
       setSeats(seatsData);
     } catch (error) {
       console.error("Error fetching seats by zone:", error);
@@ -137,11 +134,6 @@ export default function SeatManagement() {
       setSeatNumber(seat.seatNumber);
       setSelectedFloorId(seat.floorId);
       setSelectedZoneId(seat.zoneId);
-
-      // Ensure zones are loaded for this floor
-      getZonesByFloor(seat.floorId).then((zonesData) => {
-        setZones(zonesData);
-      });
     } else {
       setEditingSeat(null);
       setSeatNumber("");
@@ -155,7 +147,8 @@ export default function SeatManagement() {
     setOpenDialog(false);
     setEditingSeat(null);
     setSeatNumber("");
-    // Don't reset floor and zone IDs to preserve context
+    setSelectedFloorId("");
+    setSelectedZoneId("");
   };
 
   const handleOpenBookDialog = (seat) => {
@@ -185,16 +178,25 @@ export default function SeatManagement() {
           seatNumber,
           zoneId: selectedZoneId,
           floorId: selectedFloorId,
+          isBooked: editingSeat.isBooked || false,
         });
       } else {
         await createSeat({
           seatNumber,
           zoneId: selectedZoneId,
           floorId: selectedFloorId,
+          isBooked: false, // Initialize with isBooked = false
         });
       }
       handleCloseDialog();
-      if (filterZoneId) {
+
+      // Refresh seats after creating/updating
+      if (
+        selectedZoneId === filterZoneId &&
+        selectedFloorId === filterFloorId
+      ) {
+        fetchSeatsByZone(filterZoneId);
+      } else if (filterZoneId) {
         fetchSeatsByZone(filterZoneId);
       }
     } catch (error) {
@@ -206,9 +208,7 @@ export default function SeatManagement() {
     if (window.confirm("Are you sure you want to delete this seat?")) {
       try {
         await deleteSeat(id);
-        if (filterZoneId) {
-          fetchSeatsByZone(filterZoneId);
-        }
+        fetchSeatsByZone(filterZoneId);
       } catch (error) {
         console.error("Error deleting seat:", error);
       }
@@ -216,30 +216,19 @@ export default function SeatManagement() {
   };
 
   const handleBookSeat = async () => {
-    // Validate dates
-    if (new Date(bookingData.checkOut) <= new Date(bookingData.checkIn)) {
-      alert("Check-out date must be after check-in date");
-      return;
-    }
-
     try {
       await bookSeat(editingSeat.id, bookingData);
       handleCloseBookDialog();
-      if (filterZoneId) {
-        fetchSeatsByZone(filterZoneId);
-      }
+      fetchSeatsByZone(filterZoneId);
     } catch (error) {
       console.error("Error booking seat:", error);
-      alert("Failed to book seat: " + error.message);
     }
   };
 
   const handleReleaseSeat = async (id) => {
     try {
       await releaseSeat(id);
-      if (filterZoneId) {
-        fetchSeatsByZone(filterZoneId);
-      }
+      fetchSeatsByZone(filterZoneId);
     } catch (error) {
       console.error("Error releasing seat:", error);
     }
@@ -488,19 +477,15 @@ export default function SeatManagement() {
             <Select
               value={selectedFloorId}
               onChange={(e) => {
-                const newFloorId = e.target.value;
-                setSelectedFloorId(newFloorId);
-                setSelectedZoneId(""); // Reset zone when floor changes
-                // Fetch zones for the new floor
-                if (newFloorId) {
-                  getZonesByFloor(newFloorId).then((zonesData) => {
+                setSelectedFloorId(e.target.value);
+                setSelectedZoneId("");
+                if (e.target.value) {
+                  getZonesByFloor(e.target.value).then((zonesData) => {
                     setZones(zonesData);
                     if (zonesData.length > 0) {
                       setSelectedZoneId(zonesData[0].id);
                     }
                   });
-                } else {
-                  setZones([]);
                 }
               }}
               label="Floor"
@@ -513,10 +498,7 @@ export default function SeatManagement() {
             </Select>
           </FormControl>
 
-          <FormControl
-            fullWidth
-            disabled={!selectedFloorId || zones.length === 0}
-          >
+          <FormControl fullWidth disabled={!selectedFloorId}>
             <InputLabel>Zone</InputLabel>
             <Select
               value={selectedZoneId}

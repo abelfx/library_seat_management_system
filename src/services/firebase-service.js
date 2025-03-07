@@ -15,7 +15,7 @@ import { Floor, Zone, Seat } from "../firebase/model/model";
 
 // Floor Services
 export const getFloors = async () => {
-  const floorsCollection = collection(db, "floors");
+  const floorsCollection = collection(db, "Floor");
   const floorSnapshot = await getDocs(floorsCollection);
   return floorSnapshot.docs.map((doc) =>
     Floor.fromFirebase(doc.id, doc.data())
@@ -23,7 +23,7 @@ export const getFloors = async () => {
 };
 
 export const getFloor = async (id) => {
-  const floorDoc = doc(db, "floors", id);
+  const floorDoc = doc(db, "Floor", id);
   const floorSnapshot = await getDoc(floorDoc);
   if (floorSnapshot.exists()) {
     return Floor.fromFirebase(floorSnapshot.id, floorSnapshot.data());
@@ -33,12 +33,12 @@ export const getFloor = async (id) => {
 
 export const createFloor = async (floorData) => {
   const floor = new Floor(floorData);
-  const docRef = await addDoc(collection(db, "floors"), floor.toJSON());
+  const docRef = await addDoc(collection(db, "Floor"), floor.toJSON());
   return { ...floor, id: docRef.id };
 };
 
 export const updateFloor = async (id, floorData) => {
-  const floorRef = doc(db, "floors", id);
+  const floorRef = doc(db, "Floor", id);
   await updateDoc(floorRef, floorData);
   return { id, ...floorData };
 };
@@ -58,7 +58,7 @@ export const deleteFloor = async (id) => {
   }
 
   // Finally delete the floor
-  await deleteDoc(doc(db, "floors", id));
+  await deleteDoc(doc(db, "Floor", id));
   return id;
 };
 
@@ -76,7 +76,7 @@ export const getZones = async () => {
 };
 
 export const getZonesByFloor = async (floorId) => {
-  const zonesCollection = collection(db, `floors/${floorId}/zones`);
+  const zonesCollection = collection(db, `Floor/${floorId}/zones`);
   const zoneSnapshot = await getDocs(zonesCollection);
   return zoneSnapshot.docs.map((doc) =>
     Zone.fromFirebase(doc.id, doc.data(), floorId)
@@ -84,7 +84,7 @@ export const getZonesByFloor = async (floorId) => {
 };
 
 export const getZone = async (floorId, zoneId) => {
-  const zoneDoc = doc(db, `floors/${floorId}/zones`, zoneId);
+  const zoneDoc = doc(db, `Floor/${floorId}/zones`, zoneId);
   const zoneSnapshot = await getDoc(zoneDoc);
   if (zoneSnapshot.exists()) {
     return Zone.fromFirebase(zoneSnapshot.id, zoneSnapshot.data(), floorId);
@@ -96,14 +96,14 @@ export const createZone = async (zoneData) => {
   const zone = new Zone(zoneData);
   const floorId = zone.floorId;
   const docRef = await addDoc(
-    collection(db, `floors/${floorId}/zones`),
+    collection(db, `Floor/${floorId}/zones`),
     zone.toJSON()
   );
   return { ...zone, id: docRef.id };
 };
 
 export const updateZone = async (floorId, zoneId, zoneData) => {
-  const zoneRef = doc(db, `floors/${floorId}/zones`, zoneId);
+  const zoneRef = doc(db, `Floor/${floorId}/zones`, zoneId);
   await updateDoc(zoneRef, zoneData);
   return { id: zoneId, ...zoneData };
 };
@@ -116,7 +116,7 @@ export const deleteZone = async (floorId, zoneId) => {
   }
 
   // Then delete the zone
-  await deleteDoc(doc(db, `floors/${floorId}/zones`, zoneId));
+  await deleteDoc(doc(db, `Floor/${floorId}/zones`, zoneId));
   return zoneId;
 };
 
@@ -134,15 +134,27 @@ export const getSeats = async () => {
   });
 };
 
+// export const getSeatsByZone = async (floorId, zoneId) => {
+//   const seatsCollection = collection(
+//     db,
+//     `Floor/${floorId}/zones/${zoneId}/seats`
+//   );
+//   const seatSnapshot = await getDocs(seatsCollection);
+//   return seatSnapshot.docs.map((doc) => {
+//     const data = doc.data();
+//     return Seat.fromFirebase(doc.id, data, zoneId, floorId);
+//   });
+// };
 export const getSeatsByZone = async (floorId, zoneId) => {
   const seatsCollection = collection(
     db,
-    `floors/${floorId}/zones/${zoneId}/seats`
+    `Floor/${floorId}/zones/${zoneId}/seats`
   );
-  const seatSnapshot = await getDocs(seatsCollection);
+  const q = query(seatsCollection, where("zoneId", "==", zoneId));
+  const seatSnapshot = await getDocs(q);
   return seatSnapshot.docs.map((doc) => {
     const data = doc.data();
-    return Seat.fromFirebase(doc.id, data, zoneId, floorId);
+    return Seat.fromFirebase(doc.id, data, zoneId, data.floorId);
   });
 };
 
@@ -161,7 +173,7 @@ export const getSeatsByFloor = async (floorId) => {
 };
 
 export const getSeat = async (floorId, zoneId, seatId) => {
-  const seatDoc = doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId);
+  const seatDoc = doc(db, `Floor/${floorId}/zones/${zoneId}/seats`, seatId);
   const seatSnapshot = await getDoc(seatDoc);
   if (seatSnapshot.exists()) {
     const data = seatSnapshot.data();
@@ -183,14 +195,14 @@ export const createSeat = async (seatData) => {
   };
 
   const docRef = await addDoc(
-    collection(db, `floors/${floorId}/zones/${zoneId}/seats`),
+    collection(db, `Floor/${floorId}/zones/${zoneId}/seats`),
     formattedData
   );
   return { ...seat, id: docRef.id };
 };
 
 export const updateSeat = async (floorId, zoneId, seatId, seatData) => {
-  const seatRef = doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId);
+  const seatRef = doc(db, `Floor/${floorId}/zones/${zoneId}/seats`, seatId);
 
   // Format data to match Firestore structure
   const formattedData = {
@@ -214,7 +226,7 @@ export const updateSeat = async (floorId, zoneId, seatId, seatData) => {
 };
 
 export const deleteSeat = async (floorId, zoneId, seatId) => {
-  await deleteDoc(doc(db, `floors/${floorId}/zones/${zoneId}/seats`, seatId));
+  await deleteDoc(doc(db, `Floor/${floorId}/zones/${zoneId}/seats`, seatId));
   return seatId;
 };
 
