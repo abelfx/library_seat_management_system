@@ -20,6 +20,7 @@ import AdminLogin from "./pages/Auth/AdminLogin";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import SeatSelectionPage from "./pages/Admin/SeatSelectionPage";
 import Unauthorized from "./pages/Auth/Unauthorized";
+import LiveChatSupport from "./pages/Chat/ChatSupport";
 
 // Protected route component to check auth status
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,7 @@ function App() {
         <Route path="/available-floor" element={<AvailableFloor />} />
         <Route path="/available-seat" element={<AvailableSeat />} />
         <Route path="/available-seats/:floorId" element={<AvailableSeat />} />
+        <Route path="/support-chat" element={<LiveChatSupport />} />
         <Route
           path="/home"
           element={

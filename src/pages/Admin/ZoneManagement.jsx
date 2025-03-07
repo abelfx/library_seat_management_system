@@ -20,11 +20,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormControlLabel,
+  Switch,
+  Tooltip,
 } from "@mui/material";
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Group as GroupIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import {
   getFloors,
@@ -44,6 +49,9 @@ export default function ZoneManagement() {
   const [zoneName, setZoneName] = useState("");
   const [selectedFloorId, setSelectedFloorId] = useState("");
   const [filterFloorId, setFilterFloorId] = useState("");
+  const [isGroupZone, setIsGroupZone] = useState(false);
+  const [minGroupSize, setMinGroupSize] = useState(2);
+  const [maxGroupSize, setMaxGroupSize] = useState(8);
 
   useEffect(() => {
     fetchFloors();
@@ -99,12 +107,18 @@ export default function ZoneManagement() {
       setEditingZone(zone);
       setZoneName(zone.zoneName);
       setSelectedFloorId(zone.floorId);
+      setIsGroupZone(zone.isGroupZone || false);
+      setMinGroupSize(zone.minGroupSize || 2);
+      setMaxGroupSize(zone.maxGroupSize || 8);
     } else {
       setEditingZone(null);
       setZoneName("");
       setSelectedFloorId(
         filterFloorId || (floors.length > 0 ? floors[0].id : "")
       );
+      setIsGroupZone(false);
+      setMinGroupSize(2);
+      setMaxGroupSize(8);
     }
     setOpenDialog(true);
   };
@@ -114,20 +128,25 @@ export default function ZoneManagement() {
     setEditingZone(null);
     setZoneName("");
     setSelectedFloorId("");
+    setIsGroupZone(false);
+    setMinGroupSize(2);
+    setMaxGroupSize(8);
   };
 
   const handleSaveZone = async () => {
     try {
+      const zoneData = {
+        zoneName,
+        floorId: selectedFloorId,
+        isGroupZone,
+        minGroupSize: isGroupZone ? minGroupSize : null,
+        maxGroupSize: isGroupZone ? maxGroupSize : null,
+      };
+
       if (editingZone) {
-        await updateZone(editingZone.id, {
-          zoneName,
-          floorId: selectedFloorId,
-        });
+        await updateZone(editingZone.id, zoneData);
       } else {
-        await createZone({
-          zoneName,
-          floorId: selectedFloorId,
-        });
+        await createZone(zoneData);
       }
       handleCloseDialog();
       if (filterFloorId) {
@@ -147,11 +166,15 @@ export default function ZoneManagement() {
       )
     ) {
       try {
-        await deleteZone(id);
-        if (filterFloorId) {
-          fetchZonesByFloor(filterFloorId);
-        } else {
-          fetchZones();
+        // Find the zone to get its floorId
+        const zone = zones.find((z) => z.id === id);
+        if (zone) {
+          await deleteZone(zone.floorId, id);
+          if (filterFloorId) {
+            fetchZonesByFloor(filterFloorId);
+          } else {
+            fetchZones();
+          }
         }
       } catch (error) {
         console.error("Error deleting zone:", error);
@@ -209,6 +232,8 @@ export default function ZoneManagement() {
                 <TableCell>ID</TableCell>
                 <TableCell>Zone Name</TableCell>
                 <TableCell>Floor</TableCell>
+                <TableCell>Zone Type</TableCell>
+                <TableCell>Group Size</TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -216,7 +241,7 @@ export default function ZoneManagement() {
             <TableBody>
               {zones.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={7} align="center">
                     {floors.length === 0
                       ? "No floors found. Create a floor first."
                       : "No zones found. Create one to get started."}
@@ -229,7 +254,31 @@ export default function ZoneManagement() {
                     <TableCell>{zone.zoneName}</TableCell>
                     <TableCell>{getFloorName(zone.floorId)}</TableCell>
                     <TableCell>
-                      {new Date(zone.createdAt).toLocaleString()}
+                      {zone.isGroupZone ? (
+                        <Tooltip title="Group Study Zone">
+                          <GroupIcon color="primary" />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Individual Zone">
+                          <PersonIcon />
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {zone.isGroupZone
+                        ? `${zone.minGroupSize || 2} - ${
+                            zone.maxGroupSize || 8
+                          } people`
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {zone.createdAt instanceof Date
+                        ? zone.createdAt.toLocaleString()
+                        : zone.createdAt
+                        ? new Date(
+                            zone.createdAt.seconds * 1000
+                          ).toLocaleString()
+                        : "N/A"}
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
@@ -255,7 +304,12 @@ export default function ZoneManagement() {
         </TableContainer>
       )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>{editingZone ? "Edit Zone" : "Add New Zone"}</DialogTitle>
         <DialogContent>
           <TextField
@@ -268,7 +322,8 @@ export default function ZoneManagement() {
             onChange={(e) => setZoneName(e.target.value)}
             className="mb-4"
           />
-          <FormControl fullWidth>
+
+          <FormControl fullWidth className="mb-4">
             <InputLabel>Floor</InputLabel>
             <Select
               value={selectedFloorId}
@@ -282,6 +337,53 @@ export default function ZoneManagement() {
               ))}
             </Select>
           </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isGroupZone}
+                onChange={(e) => setIsGroupZone(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Group Study Zone (No Individual Bookings)"
+            className="mb-4"
+          />
+
+          {isGroupZone && (
+            <Box className="p-4 border rounded mb-4">
+              <Typography variant="subtitle2" className="mb-2">
+                Group Size Requirements
+              </Typography>
+              <Box className="flex gap-4">
+                <TextField
+                  label="Minimum Group Size"
+                  type="number"
+                  value={minGroupSize}
+                  onChange={(e) =>
+                    setMinGroupSize(Math.max(2, parseInt(e.target.value) || 2))
+                  }
+                  InputProps={{ inputProps: { min: 2 } }}
+                  fullWidth
+                />
+                <TextField
+                  label="Maximum Group Size"
+                  type="number"
+                  value={maxGroupSize}
+                  onChange={(e) =>
+                    setMaxGroupSize(
+                      Math.max(
+                        minGroupSize,
+                        parseInt(e.target.value) || minGroupSize
+                      )
+                    )
+                  }
+                  InputProps={{ inputProps: { min: minGroupSize } }}
+                  fullWidth
+                />
+              </Box>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>

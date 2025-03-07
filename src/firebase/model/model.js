@@ -162,28 +162,25 @@ export class Floor {
 // Zone Model
 export class Zone {
   constructor(data) {
-    this.id = data.id || null;
-    this.zoneName = data.zoneName;
-    this.floorId = data.floorId;
-    this.createdAt = data.createdAt || new Date().toISOString();
+    this.zoneName = data.zoneName || "";
+    this.floorId = data.floorId || "";
+    this.createdAt = data.createdAt || new Date();
+    this.updatedAt = data.updatedAt || new Date();
+    this.isGroupZone = data.isGroupZone || false;
+    this.minGroupSize = data.isGroupZone ? data.minGroupSize || 2 : null;
+    this.maxGroupSize = data.isGroupZone ? data.maxGroupSize || 8 : null;
   }
 
   toJSON() {
     return {
-      id: this.id,
       zoneName: this.zoneName,
       floorId: this.floorId,
       createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      isGroupZone: this.isGroupZone,
+      minGroupSize: this.minGroupSize,
+      maxGroupSize: this.maxGroupSize,
     };
-  }
-
-  static fromFirebase(id, data, floorId) {
-    return new Zone({
-      id,
-      zoneName: data.zoneName,
-      floorId,
-      createdAt: data.createdAt,
-    });
   }
 }
 

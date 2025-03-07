@@ -63,25 +63,43 @@ export const deleteFloor = async (id) => {
 };
 
 // Zone Services
+// export const getZones = async () => {
+//   // Use collectionGroup to get all zones across all floors
+//   const zonesGroup = collectionGroup(db, "zones");
+//   const zoneSnapshot = await getDocs(zonesGroup);
+//   return zoneSnapshot.docs.map((doc) => {
+//     const data = doc.data();
+//     // Extract floorId from the reference path
+//     const floorId = doc.ref.path.split("/")[1];
+//     return Zone.fromFirebase(doc.id, data, floorId);
+//   });
+// };
 export const getZones = async () => {
   // Use collectionGroup to get all zones across all floors
   const zonesGroup = collectionGroup(db, "zones");
   const zoneSnapshot = await getDocs(zonesGroup);
+
   return zoneSnapshot.docs.map((doc) => {
     const data = doc.data();
     // Extract floorId from the reference path
-    const floorId = doc.ref.path.split("/")[1];
-    return Zone.fromFirebase(doc.id, data, floorId);
+    const pathParts = doc.ref.path.split("/");
+    const floorId = pathParts[1];
+
+    // Return zone object directly instead of using Zone.fromFirebase
+    return {
+      id: doc.id,
+      floorId: floorId,
+      ...data,
+    };
   });
 };
-
-export const getZonesByFloor = async (floorId) => {
-  const zonesCollection = collection(db, `Floor/${floorId}/zones`);
-  const zoneSnapshot = await getDocs(zonesCollection);
-  return zoneSnapshot.docs.map((doc) =>
-    Zone.fromFirebase(doc.id, doc.data(), floorId)
-  );
-};
+// export const getZonesByFloor = async (floorId) => {
+//   const zonesCollection = collection(db, `Floor/${floorId}/zones`);
+//   const zoneSnapshot = await getDocs(zonesCollection);
+//   return zoneSnapshot.docs.map((doc) =>
+//     Zone.fromFirebase(doc.id, doc.data(), floorId)
+//   );
+// };
 
 export const getZone = async (floorId, zoneId) => {
   const zoneDoc = doc(db, `Floor/${floorId}/zones`, zoneId);
@@ -92,20 +110,120 @@ export const getZone = async (floorId, zoneId) => {
   return null;
 };
 
+// Update the createZone function to include group zone properties
 export const createZone = async (zoneData) => {
-  const zone = new Zone(zoneData);
-  const floorId = zone.floorId;
-  const docRef = await addDoc(
-    collection(db, `Floor/${floorId}/zones`),
-    zone.toJSON()
-  );
-  return { ...zone, id: docRef.id };
+  try {
+    const zone = new Zone({
+      ...zoneData,
+      isGroupZone: zoneData.isGroupZone || false,
+      minGroupSize: zoneData.isGroupZone ? zoneData.minGroupSize || 2 : null,
+      maxGroupSize: zoneData.isGroupZone ? zoneData.maxGroupSize || 8 : null,
+    });
+
+    const floorId = zone.floorId;
+    const zonesRef = collection(db, `Floor/${floorId}/zones`);
+
+    const docRef = await addDoc(zonesRef, zone.toJSON());
+    return { ...zone, id: docRef.id };
+  } catch (error) {
+    console.error("Error creating zone:", error);
+    throw error;
+  }
 };
 
-export const updateZone = async (floorId, zoneId, zoneData) => {
-  const zoneRef = doc(db, `Floor/${floorId}/zones`, zoneId);
-  await updateDoc(zoneRef, zoneData);
-  return { id: zoneId, ...zoneData };
+// Update the updateZone function to handle group zone properties
+export const updateZone = async (zoneId, zoneData) => {
+  try {
+    const zone = new Zone({
+      ...zoneData,
+      isGroupZone: zoneData.isGroupZone || false,
+      minGroupSize: zoneData.isGroupZone ? zoneData.minGroupSize || 2 : null,
+      maxGroupSize: zoneData.isGroupZone ? zoneData.maxGroupSize || 8 : null,
+    });
+
+    const floorId = zone.floorId;
+    const zoneRef = doc(db, `Floor/${floorId}/zones`, zoneId);
+
+    const updatedZone = {
+      ...zone.toJSON(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await updateDoc(zoneRef, updatedZone);
+    return { id: zoneId, ...updatedZone };
+  } catch (error) {
+    console.error("Error updating zone:", error);
+    throw error;
+  }
+};
+
+// Update the isValidBooking function to use the correct path
+export const isValidBooking = async (floorId, zoneId, groupSize = 1) => {
+  try {
+    const zoneRef = doc(db, `Floor/${floorId}/zones`, zoneId);
+    const zoneSnap = await getDoc(zoneRef);
+
+    if (!zoneSnap.exists()) {
+      return { valid: false, message: "Zone not found" };
+    }
+
+    const zoneData = zoneSnap.data();
+
+    // Check if this is a group zone
+    if (zoneData.isGroupZone) {
+      // For group zones, enforce minimum group size
+      if (groupSize < (zoneData.minGroupSize || 2)) {
+        return {
+          valid: false,
+          message: `This is a group study zone. Minimum group size is ${
+            zoneData.minGroupSize || 2
+          } people.`,
+        };
+      }
+
+      // Enforce maximum group size
+      if (groupSize > (zoneData.maxGroupSize || 8)) {
+        return {
+          valid: false,
+          message: `Maximum group size for this zone is ${
+            zoneData.maxGroupSize || 8
+          } people.`,
+        };
+      }
+
+      return { valid: true };
+    } else {
+      // For individual zones, only allow single bookings
+      if (groupSize > 1) {
+        return {
+          valid: false,
+          message:
+            "This zone is for individual use only. Please select a group study zone for group bookings.",
+        };
+      }
+
+      return { valid: true };
+    }
+  } catch (error) {
+    console.error("Error checking booking validity:", error);
+    throw error;
+  }
+};
+
+// You might also need to update your getZonesByFloor function to retrieve the group zone properties
+export const getZonesByFloor = async (floorId) => {
+  try {
+    const zonesRef = collection(db, `Floor/${floorId}/zones`);
+    const snapshot = await getDocs(zonesRef);
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error("Error fetching zones by floor:", error);
+    throw error;
+  }
 };
 
 export const deleteZone = async (floorId, zoneId) => {
@@ -134,27 +252,15 @@ export const getSeats = async () => {
   });
 };
 
-// export const getSeatsByZone = async (floorId, zoneId) => {
-//   const seatsCollection = collection(
-//     db,
-//     `Floor/${floorId}/zones/${zoneId}/seats`
-//   );
-//   const seatSnapshot = await getDocs(seatsCollection);
-//   return seatSnapshot.docs.map((doc) => {
-//     const data = doc.data();
-//     return Seat.fromFirebase(doc.id, data, zoneId, floorId);
-//   });
-// };
 export const getSeatsByZone = async (floorId, zoneId) => {
   const seatsCollection = collection(
     db,
     `Floor/${floorId}/zones/${zoneId}/seats`
   );
-  const q = query(seatsCollection, where("zoneId", "==", zoneId));
-  const seatSnapshot = await getDocs(q);
+  const seatSnapshot = await getDocs(seatsCollection);
   return seatSnapshot.docs.map((doc) => {
     const data = doc.data();
-    return Seat.fromFirebase(doc.id, data, zoneId, data.floorId);
+    return Seat.fromFirebase(doc.id, data, zoneId, floorId);
   });
 };
 
